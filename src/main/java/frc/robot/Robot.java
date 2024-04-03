@@ -7,11 +7,13 @@ package frc.robot;
 // WPILIB library
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.Timer;
 // import edu.wpi.first.wpilibj.motorcontrol.Spark; 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 // Ctre/Phoneix library (VEX Robotics)
 import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 
@@ -36,10 +38,9 @@ public class Robot extends TimedRobot {
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
    */
-
-   // new code line 
-
+  
   /*---Part to ID Assignments---*/
+
   // DriveTrain Motors
   private VictorSPX RightFront = new VictorSPX(0);
   private VictorSPX RightRear = new VictorSPX(1);
@@ -65,17 +66,23 @@ public class Robot extends TimedRobot {
 
   // Encoders & PID
 
-  /* Remove after use
+  /*
   RelativeEncoder climberEncoder;
   SparkPIDController SparkPIDController;
   public double kP, kI, kD, kIz, kFF, kMaxOutput, kMinOutput;
   */
-
-  // Shooting Wheel Variable & Control
-  // double Lift = driverJoystick.getRawButton()
     
   @Override
   public void robotInit() {
+
+    // Brake mode on shooter arm; prevents the shooting arm from breaking
+    RightShooterArm.setNeutralMode(NeutralMode.Brake);
+    LeftShooterArm.setNeutralMode(NeutralMode.Brake);
+
+    // Coast mode on shooting wheels; allows for maximum speed
+    RightShooterWheel.setNeutralMode(NeutralMode.Coast);
+    LeftShooterWheel.setNeutralMode(NeutralMode.Coast);
+
     /*--Encoder & PID Stuff (Still in Progress)--*/
     /* Remove after use
     climberEncoder = ClimberLeft.getEncoder(SparkRelativeEncoder.Type.kQuadrature, 4096);
@@ -119,14 +126,31 @@ public class Robot extends TimedRobot {
   public void autonomousInit() {}
 
   @Override
-  public void autonomousPeriodic() {}
+  public void autonomousPeriodic() {
+    double time = Timer.getFPGATimestamp();
+
+    // For 3 seconds, drive forward to get out of the starting line and wait for teleopPeriodic.
+    if (time < 3) {
+      LeftFront.set(ControlMode.PercentOutput, 0.5);
+      LeftRear.set(ControlMode.PercentOutput, 0.5);
+      RightFront.set(ControlMode.PercentOutput, 0.5);
+      RightRear.set(ControlMode.PercentOutput, 0.5);
+    } else {
+      LeftFront.set(ControlMode.PercentOutput, 0);
+      LeftRear.set(ControlMode.PercentOutput, 0);
+      RightFront.set(ControlMode.PercentOutput, 0);
+      RightRear.set(ControlMode.PercentOutput, 0);
+    }
+  }
 
   @Override
   public void teleopInit() {}
 
   @Override
   public void teleopPeriodic() {
-        /*---Calcuations & Control Assignments---*/
+
+    /*---Calcuations & Control Assignments---*/
+
     // DriveTrain Varible & Control
     double speed = -driverJoystick.getRawAxis(5) * 0.3;
     double turn = driverJoystick.getRawAxis(0) * 0.3;
@@ -143,13 +167,21 @@ public class Robot extends TimedRobot {
     double climbSpeed = Pull - Push; // when ClimbingArm is extending, Pull = 1
 
     // Shooting Arm Varible & Control
-    double Raise = driverJoystick.getRawButton(2) ? 0.1 : 0;
-    double Lower = driverJoystick.getRawButton(4) ? 0.1: 0;
+    double Raise = driverJoystick.getRawButton(2) ? 0.3 : 0;
+    double Lower = driverJoystick.getRawButton(4) ? 0.3 : 0;
 
     // Shooting Arm Calculation
-    double ArmSpeed = Raise - Lower; 
+    double ArmSpeed = Raise - Lower;
 
-    /*--Motor Power Settings*/
+    // Shooting Wheel Variable
+    double Intake = driverJoystick.getRawButton(1) ? 0.75 : 0;
+    double Outtake = driverJoystick.getRawButton(3) ? 0.75 : 0;
+
+    // Shooting Wheel Calculation
+    double ShootingSpeed = Intake - Outtake;
+
+    /*---Motor Power Settings---*/
+
     // DriveTrain Setting
     RightFront.set(ControlMode.PercentOutput, 0 + right);
     RightRear.set(ControlMode.PercentOutput, 0 + right);
@@ -159,20 +191,19 @@ public class Robot extends TimedRobot {
     // Climbing Arm Setting
     ClimberRight.set(0 + climbSpeed);
     ClimberLeft.set(0 + climbSpeed);
-    System.out.println("Hello");
-    System.out.println(0 + climbSpeed);
 
     // Shooting Arm Setting
     RightShooterArm.set(ControlMode.PercentOutput, 0 + ArmSpeed);
     LeftShooterArm.set(ControlMode.PercentOutput, 0 + ArmSpeed);
 
-
     // Shooting Wheel Setting
-    // RightShooterWheel.set(0);
-    // LeftShooterWheel.set(0);
+    RightShooterWheel.set(ControlMode.PercentOutput, 0 + ShootingSpeed);
+    LeftShooterWheel.set(ControlMode.PercentOutput, 0 + ShootingSpeed);
 
     /*--PID stuff (Still in Progress)--*/
+
     // read PID coefficients from SmartDashboard
+    /*
     double p = SmartDashboard.getNumber("P Gain", 0);
     double i = SmartDashboard.getNumber("I Gain", 0);
     double d = SmartDashboard.getNumber("D Gain", 0);
@@ -181,9 +212,10 @@ public class Robot extends TimedRobot {
     double max = SmartDashboard.getNumber("Max Output", 0);
     double min = SmartDashboard.getNumber("Min Output", 0);
     double rotations = SmartDashboard.getNumber("Set Rotations", 0);
+    */
 
     // if PID coefficients on SmartDashboard have changed, write new values to controller
-    /* Remove after use
+    /*
     if((p != kP)) { SparkPIDController.setP(p); kP = p; }
     if((i != kI)) { SparkPIDController.setI(i); kI = i; }
     if((d != kD)) { SparkPIDController.setD(d); kD = d; }
@@ -193,6 +225,7 @@ public class Robot extends TimedRobot {
       SparkPIDController.setOutputRange(min, max); 
       kMinOutput = min; kMaxOutput = max; 
     }
+    */
 
     /**
      * PIDController objects are commanded to a set point using the 
@@ -208,7 +241,9 @@ public class Robot extends TimedRobot {
      *  com.revrobotics.CANSparkMax.ControlType.kVelocity
      *  com.revrobotics.CANSparkMax.ControlType.kVoltage
      */
-    /* Remove after use
+
+    // Displaying stuff onto SmartDashboard
+    /*
     SparkPIDController.setReference(rotations, CANSparkMax.ControlType.kPosition);
     
     SmartDashboard.putNumber("SetPoint", rotations);
