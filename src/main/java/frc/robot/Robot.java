@@ -5,27 +5,36 @@
 package frc.robot;
 
 // WPILIB library
+/*
+* This is pulling classes from pre-existing code for spefically
+* Joystick (the logitech ps4 controller), TimedRobot (code template's source code), Timer (for autonomousPeriodic), smartdashboard.
+*/
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
-// import edu.wpi.first.wpilibj.motorcontrol.Spark; 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 // Ctre/Phoneix library (VEX Robotics)
+/*
+* This is pulling classes from pre-existing code for spefically
+* TalonSRX MotorController, VictorSPX MotorController, and the NeutralMode mode (Brake/Coast).
+*/
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 
 // REV library
+/*
+* This is pulling classes from pre-existing code for spefically
+* CANSparkMax Controller (in CAN connection mode), CANSparkLowLevel motortype.
+* the last 3 imports are commented intentionally (not in use yet).
+*/
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkLowLevel.MotorType;
-
-/*
-import com.revrobotics.RelativeEncoder;
-import com.revrobotics.SparkRelativeEncoder;
-import com.revrobotics.SparkPIDController;
-*/
+// import com.revrobotics.RelativeEncoder;
+// import com.revrobotics.SparkRelativeEncoder;
+// import com.revrobotics.SparkPIDController;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -39,7 +48,7 @@ public class Robot extends TimedRobot {
    * initialization code.
    */
   
-  /*---Part to ID Assignments---*/
+  /*---Component to ID Assignments---*/
 
   // DriveTrain Motors
   private VictorSPX RightFront = new VictorSPX(0);
@@ -64,16 +73,15 @@ public class Robot extends TimedRobot {
   CANSparkMax ClimberLeft = new CANSparkMax(leftMotorID, MotorType.kBrushless);
   CANSparkMax ClimberRight = new CANSparkMax(rightMotorID, MotorType.kBrushless);
 
-  // Encoders & PID
-
-  /*
-  RelativeEncoder climberEncoder;
-  SparkPIDController SparkPIDController;
-  public double kP, kI, kD, kIz, kFF, kMaxOutput, kMinOutput;
-  */
+  // Encoders & PID (Intentionally commented)
+  // RelativeEncoder climberEncoder;
+  // SparkPIDController SparkPIDController;
+  // public double kP, kI, kD, kIz, kFF, kMaxOutput, kMinOutput;
     
   @Override
   public void robotInit() {
+
+    /*---NeutralMode setting for motorcontrollers (Brake or Coast)---*/
 
     // Brake mode on shooter arm; prevents the shooting arm from breaking
     RightShooterArm.setNeutralMode(NeutralMode.Brake);
@@ -84,7 +92,7 @@ public class Robot extends TimedRobot {
     LeftShooterWheel.setNeutralMode(NeutralMode.Coast);
 
     /*--Encoder & PID Stuff (Still in Progress)--*/
-    /* Remove after use
+    /*
     climberEncoder = ClimberLeft.getEncoder(SparkRelativeEncoder.Type.kQuadrature, 4096);
     ClimberLeft.restoreFactoryDefaults(); // resets to 0 everytime drivestation is booted up
     SparkPIDController = ClimberLeft.getPIDController();
@@ -151,6 +159,14 @@ public class Robot extends TimedRobot {
 
     /*---Calcuations & Control Assignments---*/
 
+     /*
+     * The mutiplier that goes after the axis/id value determines the raw speed.
+     * -1 for full reverse power/speed
+     * 0 for netural (no power/speed)
+     * 1 for full power/speed
+     * Highly recommend to change a factor by a little bit to make sure nothing breaks.
+     */
+
     // DriveTrain Varible & Control
     double speed = -driverJoystick.getRawAxis(5) * 0.3;
     double turn = driverJoystick.getRawAxis(0) * 0.3;
@@ -164,11 +180,15 @@ public class Robot extends TimedRobot {
     double Push = driverJoystick.getRawAxis(2) * 0.3;
 
     // Climbing Arm Calculation
-    double climbSpeed = Pull - Push; // when ClimbingArm is extending, Pull = 1
+    double climbSpeed = Pull - Push;
+    // when ClimbingArm is extending, climbSpeed should equal to 1
+    // when ClimbingArm is retracting, climbSpeed should equal to -1
 
     // Shooting Arm Varible & Control
     double Raise = driverJoystick.getRawButton(2) ? 0.3 : 0;
     double Lower = driverJoystick.getRawButton(4) ? 0.3 : 0;
+    // "?" and ":" turns the boolean value (true/false) into a numerical value.
+    // the value between ? and : is the speed  
 
     // Shooting Arm Calculation
     double ArmSpeed = Raise - Lower;
@@ -245,7 +265,6 @@ public class Robot extends TimedRobot {
     // Displaying stuff onto SmartDashboard
     /*
     SparkPIDController.setReference(rotations, CANSparkMax.ControlType.kPosition);
-    
     SmartDashboard.putNumber("SetPoint", rotations);
     SmartDashboard.putNumber("ProcessVariable", climberEncoder.getPosition());
     */
